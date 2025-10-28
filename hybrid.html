@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário de Escala de Home Office</title>
+    <!-- Carregando o Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <script>
+        // Aplica o tema salvo no localStorage antes da página carregar para evitar flash
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <style>
+        /* Estilo para garantir que os dias do calendário tenham uma altura mínima */
+        .calendar-day {
+            min-height: 100px;
+        }
+        /* Transições suaves para botões e modal */
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans antialiased dark:bg-gray-900 dark:text-white">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-600 dark:text-blue-300">Calendário Híbrido Suporte</h1>
+
+        <!-- Controles: Navegação e Pesquisa -->
+        <div class="bg-white rounded-lg shadow-xl p-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 dark:bg-gray-800">
+            
+            <!-- Controles de Navegação -->
+            <div class="flex items-center gap-4">
+                <button id="prev-month" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all shadow-md">
+                    &lt; Anterior
+                </button>
+                <h2 id="month-year-display" class="text-xl md:text-2xl font-semibold w-48 text-center"></h2>
+                <button id="next-month" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all shadow-md">
+                    Próximo &gt;
+                </button>
+            </div>
+
+            <!-- Controles de Pesquisa -->
+            <div class="flex items-center gap-4">
+                <input type="date" id="date-search-input" class="bg-gray-200 border border-gray-300 rounded-lg p-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <button id="search-button" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-all shadow-md text-white">
+                    Pesquisar
+                </button>
+                <button id="theme-toggle" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                    🌙
+                </button>
+            </div>
+        </div>
+
+        <!-- Resultado da Pesquisa -->
+        <div id="search-result" class="text-center text-lg text-yellow-600 dark:text-yellow-300 mb-6 h-6">
+            <!-- O resultado da pesquisa aparecerá aqui -->
+        </div>
+
+        <!-- Calendário -->
+        <div class="bg-white rounded-lg shadow-xl overflow-hidden dark:bg-gray-800">
+            <!-- Cabeçalho dos Dias da Semana -->
+            <div class="grid grid-cols-5 gap-px bg-gray-200 text-center font-bold dark:bg-gray-700">
+                <div class="py-3 px-1">Seg</div>
+                <div class="py-3 px-1">Ter</div>
+                <div class="py-3 px-1">Qua</div>
+                <div class="py-3 px-1">Qui</div>
+                <div class="py-3 px-1">Sex</div>
+            </div>
+
+            <!-- Grid dos Dias -->
+            <div id="calendar-grid" class="grid grid-cols-5 gap-px bg-gray-200 dark:bg-gray-700">
+                <!-- Os dias do calendário serão gerados pelo JavaScript -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal para Membros do Grupo -->
+    <div id="group-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 transition-all hidden z-50">
+        <div id="modal-overlay" class="absolute inset-0"></div>
+        <div class="bg-white text-gray-900 rounded-lg shadow-2xl p-6 w-full max-w-md z-10 dark:bg-gray-800 dark:text-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-group-name" class="text-2xl font-bold text-blue-700 dark:text-blue-300"></h3>
+                <button id="close-modal-button" class="text-3xl text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">&times;</button>
+            </div>
+            <ul id="modal-member-list" class="list-disc list-inside space-y-2 text-lg">
+                <!-- Membros do grupo serão injetados aqui -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Modal para Dia Pesquisado -->
+    <div id="day-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 transition-all hidden z-50">
+        <div id="day-modal-overlay" class="absolute inset-0"></div>
+        <div class="bg-white text-gray-900 rounded-lg shadow-2xl p-6 w-full max-w-2xl z-10 overflow-auto max-h-[80vh] dark:bg-gray-800 dark:text-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="day-modal-date" class="text-2xl font-bold text-blue-700 dark:text-blue-300"></h3>
+                <button id="close-day-modal-button" class="text-3xl text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">&times;</button>
+            </div>
+            <div id="day-modal-content" class="space-y-4 text-lg">
+                <!-- Grupos e membros injetados aqui -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- CONFIGURAÇÃO INICIAL ---
+
+            // Definição dos membros de cada grupo
+            const groupsData = {
+                'Grupo 1': ['Caio', 'Emano', 'Fabiano', 'Felipe', 'Rury', 'Davi', 'Yan'],
+                'Grupo 2': ['Vitor', 'Arthur', 'Emanuel', 'Rafael B', 'Eduardo', 'Samuel', 'Lorran'],
+                'Grupo 3': ['Rafael A', 'Kevin', 'Mike', 'João', 'André', 'Gabriel', 'Kamila'],
+                'Grupo 4': ['Ernane', 'Farley', 'Zuriel', 'Artur', 'Cícero', 'Diane'],
+                'Nenhum': ['Todos no escritório']
+            };
+
+            // Cores para cada grupo (classes do Tailwind)
+            const groupColors = {
+                'Grupo 1': 'bg-blue-200 text-blue-800 hover:bg-blue-300 dark:bg-blue-800 dark:text-blue-100 dark:hover:bg-blue-700',
+                'Grupo 2': 'bg-green-200 text-green-800 hover:bg-green-300 dark:bg-green-800 dark:text-green-100 dark:hover:bg-green-700',
+                'Grupo 3': 'bg-purple-200 text-purple-800 hover:bg-purple-300 dark:bg-purple-800 dark:text-purple-100 dark:hover:bg-purple-700',
+                'Grupo 4': 'bg-indigo-200 text-indigo-800 hover:bg-indigo-300 dark:bg-indigo-800 dark:text-indigo-100 dark:hover:bg-indigo-700',
+                'Nenhum': 'bg-gray-300 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500'
+            };
+
+            // Rotação do ciclo de 6 semanas (REMOVIDO - Substituído pela rotação diária)
+            // const GROUPS_ROTATION = ['Grupo 1', 'Grupo 2', 'Grupo 3', 'Grupo 4', 'Nenhum', 'Nenhum'];
+            
+            // Nova Rotação Diária (baseada na imagem)
+            // Estrutura: [Semana do Ciclo][Dia da Semana] (0=Dom, 1=Seg, ..., 6=Sab)
+            // Segunda (Índice 1) é 'Nenhum' (Presencial). Fins de semana (0 e 6) são 'Nenhum'.
+            const DAILY_ROTATION_SCHEDULE = [
+                // Ordem 1 (Semana 0)
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 2'], ['Grupo 3', 'Grupo 4'], ['Grupo 1', 'Grupo 2'], ['Grupo 3', 'Grupo 4'], ['Nenhum'] ],
+                // Ordem 2 (Semana 1)
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 3'], ['Grupo 1', 'Grupo 3'], ['Grupo 2', 'Grupo 4'], ['Grupo 2', 'Grupo 4'], ['Nenhum'] ],
+                // Ordem 3 (Semana 2)
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 2', 'Grupo 3'], ['Grupo 1', 'Grupo 4'], ['Grupo 1', 'Grupo 4'], ['Grupo 2', 'Grupo 3'], ['Nenhum'] ],
+                // Ordem 4 (Semana 3)
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 3', 'Grupo 4'], ['Grupo 1', 'Grupo 2'], ['Grupo 3', 'Grupo 4'], ['Grupo 1', 'Grupo 2'], ['Nenhum'] ],
+                // Ordem 5 (Semana 4)
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 2', 'Grupo 4'], ['Grupo 2', 'Grupo 4'], ['Grupo 1', 'Grupo 3'], ['Grupo 1', 'Grupo 3'], ['Nenhum'] ],
+                // Ordem 6 (Semana 5)
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 4'], ['Grupo 2', 'Grupo 3'], ['Grupo 2', 'Grupo 3'], ['Grupo 1', 'Grupo 4'], ['Nenhum'] ]
+            ];
+
+            // DATA DE INÍCIO DO CICLO: A lógica procedural depende disso.
+            // Vamos definir que o ciclo (Semana 1 = Grupo A) começou em 01/01/2024 (uma segunda-feira).
+            const CYCLE_START_DATE = new Date('2025-11-01T00:00:00');
+
+            let currentDate = new Date(); // Data atual para exibição do calendário
+
+            // Elementos do DOM
+            const calendarGrid = document.getElementById('calendar-grid');
+            const monthYearDisplay = document.getElementById('month-year-display');
+            const prevMonthButton = document.getElementById('prev-month');
+            const nextMonthButton = document.getElementById('next-month');
+            const dateSearchInput = document.getElementById('date-search-input');
+            const searchButton = document.getElementById('search-button');
+            const searchResult = document.getElementById('search-result');
+            const themeToggleButton = document.getElementById('theme-toggle');
+            
+            // Elementos do Modal
+            const modal = document.getElementById('group-modal');
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalGroupName = document.getElementById('modal-group-name');
+            const modalMemberList = document.getElementById('modal-member-list');
+            const closeModalButton = document.getElementById('close-modal-button');
+
+            // Elementos do Modal de Dia
+            const dayModal = document.getElementById('day-modal');
+            const dayModalOverlay = document.getElementById('day-modal-overlay');
+            const dayModalDate = document.getElementById('day-modal-date');
+            const dayModalContent = document.getElementById('day-modal-content');
+            const closeDayModalButton = document.getElementById('close-day-modal-button');
+
+            // --- LÓGICA PRINCIPAL DO CALENDÁRIO ---
+
+            /**
+             * Calcula a diferença de dias entre duas datas, ignorando o fuso horário.
+             */
+            function getDayDiff(date1, date2) {
+                const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
+                const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
+                const MS_PER_DAY = 1000 * 60 * 60 * 24;
+                return Math.floor((utc2 - utc1) / MS_PER_DAY);
+            }
+
+            /**
+             * Retorna o grupo de escala para uma data específica.
+             * Esta é a função procedural principal.
+             */
+            function getGroupForDate(date) {
+                const totalDays = getDayDiff(CYCLE_START_DATE, date);
+                // Calcula o número total de semanas desde o início do ciclo
+                const totalWeeks = Math.floor(totalDays / 7);
+                
+                // Encontra a semana atual dentro do ciclo de 6 semanas
+                // O `((... % 6) + 6) % 6` garante um resultado positivo mesmo para datas passadas
+                const cycleWeek = ((totalWeeks % DAILY_ROTATION_SCHEDULE.length) + DAILY_ROTATION_SCHEDULE.length) % DAILY_ROTATION_SCHEDULE.length;
+                
+                // Encontra o dia da semana (0 = Dom, 1 = Seg, ...)
+                const dayOfWeek = date.getDay();
+
+                // Retorna o array de grupos para aquele dia
+                return DAILY_ROTATION_SCHEDULE[cycleWeek][dayOfWeek];
+            }
+
+            /**
+             * Renderiza o calendário para o mês em `currentDate`.
+             */
+            function renderCalendar() {
+                calendarGrid.innerHTML = ''; // Limpa o grid
+                searchResult.textContent = ''; // Limpa a pesquisa
+                
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth(); // 0-11
+
+                // Formata o nome do mês e ano
+                monthYearDisplay.textContent = new Date(year, month).toLocaleDateString('pt-BR', {
+                    month: 'long',
+                    year: 'numeric'
+                });
+
+                // Informações do mês atual
+                const firstDayOfMonth = new Date(year, month, 1);
+                const lastDayOfMonth = new Date(year, month + 1, 0);
+                // Ajuste para a semana de 5 dias (1=Seg, 7=Dom) -> (0=Seg, 4=Sex)
+                let firstDayWeekday = firstDayOfMonth.getDay(); // 0 (Dom) - 6 (Sáb)
+                if (firstDayWeekday === 0) firstDayWeekday = 7; // Converte Dom para 7
+                firstDayWeekday -= 1; // Agora é 0 (Seg) - 6 (Dom)
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Normaliza 'hoje' para comparação
+
+                // 1. Preenche os dias do mês anterior (padding)
+                const prevLastDay = new Date(year, month, 0);
+                const prevMonthDaysToShow = firstDayWeekday; // Dias a preencher antes do dia 1
+                
+                for (let i = prevMonthDaysToShow; i > 0; i--) {
+                    let day = prevLastDay.getDate() - i + 1;
+                    let date = new Date(year, month - 1, day);
+                    // Pula Sábados e Domingos
+                    if (date.getDay() === 0 || date.getDay() === 6) {
+                        continue;
+                    }
+                    const groups = getGroupForDate(date);
+                    calendarGrid.appendChild(createDayCell(day, groups, false, false));
+                }
+
+                // 2. Preenche os dias do mês atual
+                for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
+                    const date = new Date(year, month, day);
+                    // Pula Sábados e Domingos
+                    if (date.getDay() === 0 || date.getDay() === 6) {
+                        continue;
+                    }
+                    date.setHours(0, 0, 0, 0); // Normaliza data
+                    const groups = getGroupForDate(date);
+                    const isToday = date.getTime() === today.getTime();
+                    calendarGrid.appendChild(createDayCell(day, groups, true, isToday));
+                }
+
+                // 3. Preenche os dias do próximo mês (padding)
+                let lastDayWeekday = lastDayOfMonth.getDay(); // 0-6
+                if (lastDayWeekday === 0) lastDayWeekday = 7;
+                lastDayWeekday -= 1; // 0-6 (Seg-Dom)
+
+                const nextMonthDaysToShow = 4 - lastDayWeekday; // 4 é Sexta-feira
+
+                for (let i = 1; i <= nextMonthDaysToShow; i++) {
+                    const date = new Date(year, month + 1, i);
+                     // Pula Sábados e Domingos
+                    if (date.getDay() === 0 || date.getDay() === 6) {
+                        continue;
+                    }
+                    const groups = getGroupForDate(date);
+                    calendarGrid.appendChild(createDayCell(i, groups, false, false));
+                }
+            }
+
+            /**
+             * Cria um elemento HTML para um dia no calendário.
+             */
+            function createDayCell(day, groups, isCurrentMonth, isToday) { // 'group' -> 'groups'
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day p-2 bg-white dark:bg-gray-800 transition-all';
+                
+                let dayNumberClasses = 'text-lg font-bold';
+                // let groupClasses = `block text-sm rounded-full px-2 py-0.5 mt-2 cursor-pointer transition-all ${groupColors[group] || 'bg-gray-700'}`; (Removido)
+                
+                if (!isCurrentMonth) {
+                    dayNumberClasses += ' text-gray-400 dark:text-gray-500';
+                    cell.classList.add('opacity-70');
+                }
+                
+                if (isToday) {
+                    dayNumberClasses += ' bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center';
+                }
+
+                // Inicia o HTML da célula com o número do dia
+                let cellHTML = `<span class="${dayNumberClasses}">${day}</span>`;
+                
+                // Mapeia o array de grupos para criar os blocos de cor
+                const groupBlocksHTML = groups.map(group => {
+                    const groupClasses = `block text-sm rounded-full px-2 py-0.5 mt-1 cursor-pointer transition-all ${groupColors[group] || 'bg-gray-700'}`;
+                    return `<span class="${groupClasses}" data-group="${group}">${group}</span>`;
+                }).join('');
+
+                cell.innerHTML = cellHTML + groupBlocksHTML;
+                
+                // Adiciona listener para abrir o modal para CADA bloco de grupo
+                cell.querySelectorAll('[data-group]').forEach(span => {
+                    span.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Evita bugs de clique duplo
+                        const groupName = e.target.getAttribute('data-group');
+                        showModal(groupName);
+                    });
+                });
+
+                return cell;
+            }
+
+            // --- FUNÇÕES DO MODAL ---
+
+            function showModal(groupName) {
+                const members = groupsData[groupName];
+                if (!members) return;
+
+                modalGroupName.textContent = groupName;
+                modalMemberList.innerHTML = ''; // Limpa lista anterior
+                
+                members.forEach(member => {
+                    const li = document.createElement('li');
+                    li.textContent = member;
+                    modalMemberList.appendChild(li);
+                });
+
+                modal.classList.remove('hidden');
+            }
+
+            function closeModal() {
+                modal.classList.add('hidden');
+            }
+
+            // --- FUNÇÕES DO MODAL DE DIA ---
+
+            function showDayModal(date, groups) {
+                dayModalDate.textContent = date.toLocaleDateString('pt-BR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                dayModalContent.innerHTML = ''; // Limpa conteúdo anterior
+
+                groups.forEach(group => {
+                    const memberList = groupsData[group] || [];
+                    
+                    const groupSection = document.createElement('div');
+                    groupSection.className = 'bg-gray-100 rounded-lg p-4 mb-4 dark:bg-gray-700';
+                    
+                    const groupTitle = document.createElement('h4');
+                    groupTitle.className = 'text-xl font-semibold text-blue-600 dark:text-blue-300';
+                    groupTitle.textContent = group;
+                    
+                    const membersListElement = document.createElement('ul');
+                    membersListElement.className = 'list-disc list-inside pl-5 space-y-1';
+                    
+                    memberList.forEach(member => {
+                        const li = document.createElement('li');
+                        li.textContent = member;
+                        membersListElement.appendChild(li);
+                    });
+
+                    groupSection.appendChild(groupTitle);
+                    groupSection.appendChild(membersListElement);
+                    dayModalContent.appendChild(groupSection);
+                });
+
+                dayModal.classList.remove('hidden');
+            }
+
+            function closeDayModal() {
+                dayModal.classList.add('hidden');
+            }
+
+            // --- FUNÇÕES DE EVENTOS (Navegação e Pesquisa) ---
+
+            function goToPrevMonth() {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            }
+
+            function goToNextMonth() {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            }
+
+            function searchForDate() {
+                const dateValue = dateSearchInput.value;
+                if (!dateValue) {
+                    searchResult.textContent = 'Por favor, selecione uma data.';
+                    return;
+                }
+                
+                // Trata a data para evitar problemas de fuso horário (interpreta como local)
+                const [year, month, day] = dateValue.split('-');
+                const searchedDate = new Date(year, month - 1, day);
+                
+                const groups = getGroupForDate(searchedDate); // 'group' -> 'groups'
+                const formattedDate = searchedDate.toLocaleDateString('pt-BR');
+                
+                searchResult.textContent = `Data: ${formattedDate}  |  Equipe(s): ${groups.join(', ')}`;
+
+                // Navega o calendário para o mês pesquisado
+                currentDate = new Date(searchedDate.getFullYear(), searchedDate.getMonth(), 1);
+                renderCalendar();
+
+                // Abre o modal com os detalhes do dia pesquisado
+                showDayModal(searchedDate, groups);
+            }
+
+            // --- REGISTRO DE EVENTOS ---
+
+            prevMonthButton.addEventListener('click', goToPrevMonth);
+            nextMonthButton.addEventListener('click', goToNextMonth);
+            searchButton.addEventListener('click', searchForDate);
+            
+            closeModalButton.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', closeModal); // Fecha ao clicar fora
+
+            closeDayModalButton.addEventListener('click', closeDayModal);
+            dayModalOverlay.addEventListener('click', closeDayModal); // Fecha ao clicar fora
+
+            themeToggleButton.addEventListener('click', () => {
+                // Adiciona ou remove a classe 'dark' do elemento <html>
+                document.documentElement.classList.toggle('dark');
+
+                // Salva a preferência no localStorage
+                if (document.documentElement.classList.contains('dark')) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+
+            // --- INICIALIZAÇÃO ---
+            renderCalendar();
+        });
+    </script>
+</body>
+</html>
+
+
+
+
