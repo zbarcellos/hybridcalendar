@@ -159,10 +159,10 @@
 
             // Definição dos membros de cada grupo
             const groupsData = {
-                'Grupo 1': ['Priscila', 'Gabriel L', 'Fabiano', 'Felipe', 'Rury', 'Davi', 'Yan'],
-                'Grupo 2': ['Lilian', 'Fernando', 'Emanuel', 'Lorran', 'Samuel', 'Sara', 'Victor'],
-                'Grupo 3': ['Mike', 'João', 'André', 'Gabriel B', 'Kamila', 'Miguel'],
-                'Grupo 4': ['Ernane', 'Cícero', 'Diane', 'Kauã'],
+                'Grupo 1': ['Priscila', 'Gabriel L', 'Fabiano', 'João', 'Rury', 'Miguel', 'Yan', 'Gabriel A'],
+                'Grupo 2': ['Lilian', 'Fernando', 'Emanuel', 'Davi', 'Cícero', 'Lorran', 'Diane'],
+                'Grupo 3': ['Felipe', 'Victor', 'André', 'Gabriel O', 'Kauã', 'Kamila'],
+                'Grupo 4': ['Mike', 'Ernane L', 'Samuel', 'Ernane M', 'Sara'],
                 'Nenhum': ['Todos no escritório']
             };
 
@@ -183,22 +183,22 @@
             // Segunda (Índice 1) é 'Nenhum' (Presencial). Fins de semana (0 e 6) são 'Nenhum'.
             const DAILY_ROTATION_SCHEDULE = [
                 // Ordem 1 (Semana 0)
-                [ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 2'], ['Grupo 3', 'Grupo 4'], ['Grupo 1', 'Grupo 2'], ['Grupo 3', 'Grupo 4'], ['Nenhum'] ],
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 2'], ['Grupo 1', 'Grupo 4'], ['Grupo 3', 'Grupo 4'], ['Grupo 2', 'Grupo 3'], ['Nenhum'] ],
                 // Ordem 2 (Semana 1)
-                [ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 3'], ['Grupo 1', 'Grupo 3'], ['Grupo 2', 'Grupo 4'], ['Grupo 2', 'Grupo 4'], ['Nenhum'] ],
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 3', 'Grupo 4'], ['Grupo 1', 'Grupo 4'], ['Grupo 1', 'Grupo 2'], ['Grupo 2', 'Grupo 3'], ['Nenhum'] ],
                 // Ordem 3 (Semana 2)
-                [ ['Nenhum'], ['Nenhum'], ['Grupo 2', 'Grupo 3'], ['Grupo 1', 'Grupo 4'], ['Grupo 1', 'Grupo 4'], ['Grupo 2', 'Grupo 3'], ['Nenhum'] ],
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 3', 'Grupo 4'], ['Grupo 2', 'Grupo 3'], ['Grupo 1', 'Grupo 2'], ['Grupo 1', 'Grupo 4'], ['Nenhum'] ],
                 // Ordem 4 (Semana 3)
-                [ ['Nenhum'], ['Nenhum'], ['Grupo 3', 'Grupo 4'], ['Grupo 1', 'Grupo 2'], ['Grupo 3', 'Grupo 4'], ['Grupo 1', 'Grupo 2'], ['Nenhum'] ],
+                [ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 2'], ['Grupo 2', 'Grupo 3'], ['Grupo 3', 'Grupo 4'], ['Grupo 1', 'Grupo 4'], ['Nenhum'] ],
                 // Ordem 5 (Semana 4)
-                [ ['Nenhum'], ['Nenhum'], ['Grupo 2', 'Grupo 4'], ['Grupo 2', 'Grupo 4'], ['Grupo 1', 'Grupo 3'], ['Grupo 1', 'Grupo 3'], ['Nenhum'] ],
+                //[ ['Nenhum'], ['Nenhum'], ['Grupo 2', 'Grupo 4'], ['Grupo 2', 'Grupo 4'], ['Grupo 1', 'Grupo 3'], ['Grupo 1', 'Grupo 3'], ['Nenhum'] ],
                 // Ordem 6 (Semana 5)
-                [ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 4'], ['Grupo 2', 'Grupo 3'], ['Grupo 2', 'Grupo 3'], ['Grupo 1', 'Grupo 4'], ['Nenhum'] ]
+                //[ ['Nenhum'], ['Nenhum'], ['Grupo 1', 'Grupo 4'], ['Grupo 2', 'Grupo 3'], ['Grupo 2', 'Grupo 3'], ['Grupo 1', 'Grupo 4'], ['Nenhum'] ]
             ];
 
             // DATA DE INÍCIO DO CICLO: A lógica procedural depende disso.
             // Vamos definir que o ciclo (Semana 1 = Grupo A) começou em 01/01/2024 (uma segunda-feira).
-            const CYCLE_START_DATE = new Date('2025-11-01T00:00:00');
+            const CYCLE_START_DATE = new Date('2026-04-13T00:00:00');
 
             let currentDate = new Date(); // Data atual para exibição do calendário
 
@@ -532,11 +532,6 @@
     </script>
 </body>
 </html>
-
-
-
-
-
 
 
 
